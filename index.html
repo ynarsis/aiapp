@@ -1,8 +1,141 @@
-<html>
-<title>AI 어플 </title>
-  <head>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>바른 자세 분류기</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #ece9e6, #ffffff);
+      text-align: center;
+      padding: 40px 20px;
+      color: #333;
+    }
+
+    h1 {
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
+
+    #webcam-container {
+      margin: 20px auto;
+      border-radius: 12px;
+      overflow: hidden;
+      display: inline-block;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    #label-container {
+      margin-top: 20px;
+    }
+
+    #label-container div {
+      background-color: #f1f1f1;
+      padding: 10px;
+      margin: 5px auto;
+      width: 250px;
+      border-radius: 8px;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      font-size: 1rem;
+      padding: 12px 24px;
+      margin-top: 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    #good-image {
+      margin-top: 20px;
+      display: none;
+    }
+
+    #good-image img {
+      width: 150px;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+  </style>
 </head>
-  <body>
-    아무거나
-  </body>
-</html>
+<body>
+  <h1>🪑 바른 자세 분류기</h1>
+  <button type="button" onclick="init()">시작하기</button>
+  <div id="webcam-container"></div>
+  <div id="label-container"></div>
+  <div id="good-image">
+    <p>👍 바른 자세네요! 착한 아이입니다 😊</p>
+    <img src="good_kid.png" alt="착한 아이 이미지" />
+  </div>
+
+  <script type="text/javascript">
+    const URL = "https://teachablemachine.withgoogle.com/models/u_20ILhUus/";
+    let model, webcam, labelContainer, maxPredictions;
+
+    async function init() {
+      const modelURL = URL + "model.json";
+      const metadataURL = URL + "metadata.json";
+
+      model = await tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
+
+      const flip = true;
+      webcam = new tmImage.Webcam(200, 200, flip);
+      try {
+        await webcam.setup();
+      } catch (err) {
+        alert("웹캠을 사용할 수 없습니다. 권한을 허용해주세요.");
+        return;
+      }
+
+      await webcam.play();
+      window.requestAnimationFrame(loop);
+
+      document.getElementById("webcam-container").appendChild(webcam.canvas);
+      labelContainer = document.getElementById("label-container");
+      labelContainer.innerHTML = "";
+      for (let i = 0; i < maxPredictions; i++) {
+        labelContainer.appendChild(document.createElement("div"));
+      }
+    }
+
+    async function loop() {
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      const prediction = await model.predict(webcam.canvas);
+
+      let goodProbability = 0;
+
+      for (let i = 0; i < maxPredictions; i++) {
+        let name = prediction[i].className;
+        let prob = (prediction[i].probability * 100).toFixed(1);
+        let labelText = "";
+
+        if (name === "good") {
+          labelText = `바른 자세: ${prob}%`;
+          goodProbability = prediction[i].probability;
+        } else if (name === "bad") {
+          labelText = `나쁜 자세: ${prob}%`;
+        } else {
+          labelText = `${name}: ${prob}%`;
+        }
+
+        labelContainer.ch
+
